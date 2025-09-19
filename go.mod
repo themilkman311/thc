@@ -1,4 +1,4 @@
-module github.com/themilkman311/THC
+module github.com/kyleraywed/thc
 
 go 1.25.1
 
