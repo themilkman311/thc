@@ -6,8 +6,8 @@ Module: `github.com/themilkman311/thc`
 
 ```
 NewTHC() thc_container
-Store[T](container *thc_container, in T) thc_key[T]
-Fetch[T](container *thc_container, key thc_key[T]) (T, error)
+Store[T any](container *thc_container, input T) (thc_key[T], error)
+Fetch[T any](container *thc_container, key thc_key[T]) (T, error)
 Update[T any](container *thc_container, key thc_key[T], input T) error
 Remove[T](container *thc_container, key *thc_key[T]) error
 ```
