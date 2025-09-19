@@ -68,6 +68,12 @@ func Fetch[T any](container *thc_container, key thc_key[T]) (T, error) {
 }
 
 func Update[T any](container *thc_container, key thc_key[T], input T) error {
+	switch any(input).(type) {
+	case thc_container:
+		if any(input).(thc_container).identity == container.identity {
+			return fmt.Errorf("container may not store itself")
+		}
+	}
 	if key.identity == "DELETED" {
 		return fmt.Errorf("deleted value at key")
 	}
