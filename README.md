@@ -2,7 +2,7 @@
 
 A (**t**)ype-safe, (**h**)eterogeneous (**c**)ontainer in less than 100 LOC. It allows you to store values, retrieve those values with typed keys, and delete stored values safely.
 
-Module: `github.com/themilkman311/THC`
+Module: `github.com/themilkman311/thc`
 
 ```
 NewTHC() thc_container
