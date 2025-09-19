@@ -2,7 +2,7 @@
 
 A small (**t**)ype-safe, (**h**)eterogeneous (**c**)ontainer. It allows you to store values, retrieve those values with typed keys, and delete stored values safely.
 
-Module: `github.com/themilkman311/thc`
+Module: `github.com/kyleraywed/thc`
 
 ```
 NewTHC() thc_container
@@ -19,7 +19,7 @@ package main
 
 import (
     "fmt"
-    "github.com/themilkman311/thc"
+    "github.com/kyleraywed/thc"
 )
 
 func main() {
