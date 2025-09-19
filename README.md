@@ -19,7 +19,7 @@ package main
 
 import (
     "fmt"
-    "github.com/themilkman311/THC"
+    "github.com/themilkman311/thc"
 )
 
 func main() {
