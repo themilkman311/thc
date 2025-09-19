@@ -27,7 +27,7 @@ func main() {
     c := thc.NewTHC()
 
     // Store a string (or anything) in the container, get a key
-    k := thc.Store(&c, "hello, world")
+    k, _ := thc.Store(&c, "hello, world")
 
     // Use the key to Fetch the value back
     v, _ := thc.Fetch(&c, k)
