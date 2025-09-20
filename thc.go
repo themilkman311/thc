@@ -11,36 +11,36 @@ import (
 
 const removedIdentity = "REMOVED"
 
-type dataT map[string]struct {
+type dataMap map[string]struct {
 	value        any
 	timeModified time.Time
 }
 
-type thc_container struct {
+type container struct {
 	identity string
-	data     dataT
+	data     dataMap
 	mut      sync.RWMutex // goroutine safety compliance
 }
 
-type thc_key[T any] struct {
+type key[T any] struct {
 	identity string
-	key      string
+	mapKey   string
 }
 
-func (c *thc_container) String() string {
+func (c *container) String() string {
 	c.mut.RLock()
 	defer c.mut.RUnlock()
 	return "Length: " + strconv.Itoa(len(c.data))
 }
 
-func (c *thc_container) Len() int {
+func (c *container) Len() int {
 	c.mut.RLock()
 	defer c.mut.RUnlock()
 	return len(c.data)
 }
 
-func NewTHC() thc_container {
-	return thc_container{
+func NewTHC() container {
+	return container{
 		identity: uuid.NewString(),
 		data: make(map[string]struct {
 			value        any
@@ -49,21 +49,21 @@ func NewTHC() thc_container {
 	}
 }
 
-func Store[T any](container *thc_container, input T) (thc_key[T], error) {
+func Store[T any](c *container, input T) (key[T], error) {
 	switch any(input).(type) {
-	case thc_container:
-		if any(input).(thc_container).identity == container.identity {
-			var zero thc_key[T]
+	case container:
+		if any(input).(container).identity == c.identity {
+			var zero key[T]
 			return zero, fmt.Errorf("container may not store itself")
 		}
 	}
 
-	key := uuid.NewString()
+	newKey := uuid.NewString()
 
-	container.mut.Lock()
-	defer container.mut.Unlock()
+	c.mut.Lock()
+	defer c.mut.Unlock()
 
-	container.data[key] = struct {
+	c.data[newKey] = struct {
 		value        any
 		timeModified time.Time
 	}{
@@ -71,26 +71,26 @@ func Store[T any](container *thc_container, input T) (thc_key[T], error) {
 		timeModified: time.Now(),
 	}
 
-	return thc_key[T]{
-		identity: container.identity,
-		key:      key,
+	return key[T]{
+		identity: c.identity,
+		mapKey:   newKey,
 	}, nil
 }
 
-func Fetch[T any](container *thc_container, key thc_key[T]) (T, error) {
+func Fetch[T any](c *container, key key[T]) (T, error) {
 	var zero T
 
 	if key.identity == removedIdentity {
 		return zero, fmt.Errorf("deleted value at key")
 	}
-	if container.identity != key.identity {
+	if c.identity != key.identity {
 		return zero, fmt.Errorf("container/key identity mismatch")
 	}
 
-	container.mut.RLock()
-	defer container.mut.RUnlock()
+	c.mut.RLock()
+	defer c.mut.RUnlock()
 
-	val, ok := container.data[key.key]
+	val, ok := c.data[key.mapKey]
 	if !ok {
 		return zero, fmt.Errorf("value not found")
 	}
@@ -102,24 +102,24 @@ func Fetch[T any](container *thc_container, key thc_key[T]) (T, error) {
 	return casted, nil
 }
 
-func Update[T any](container *thc_container, key thc_key[T], input T) error {
+func Update[T any](c *container, key key[T], input T) error {
 	switch any(input).(type) {
-	case thc_container:
-		if any(input).(thc_container).identity == container.identity {
+	case container:
+		if any(input).(container).identity == c.identity {
 			return fmt.Errorf("container may not store itself")
 		}
 	}
 	if key.identity == removedIdentity {
 		return fmt.Errorf("deleted value at key")
 	}
-	if container.identity != key.identity {
+	if c.identity != key.identity {
 		return fmt.Errorf("container/key identity mismatch")
 	}
 
-	container.mut.Lock()
-	defer container.mut.Unlock()
+	c.mut.Lock()
+	defer c.mut.Unlock()
 
-	container.data[key.key] = struct {
+	c.data[key.mapKey] = struct {
 		value        any
 		timeModified time.Time
 	}{
@@ -129,24 +129,24 @@ func Update[T any](container *thc_container, key thc_key[T], input T) error {
 	return nil
 }
 
-func Remove[T any](container *thc_container, key *thc_key[T]) error {
+func Remove[T any](c *container, key *key[T]) error {
 	if key.identity == removedIdentity {
 		return fmt.Errorf("deleted value at key")
 	}
-	if container.identity != key.identity {
+	if c.identity != key.identity {
 		return fmt.Errorf("container/key identity mismatch")
 	}
 
-	container.mut.Lock()
-	defer container.mut.Unlock()
+	c.mut.Lock()
+	defer c.mut.Unlock()
 
-	_, ok := container.data[key.key]
+	_, ok := c.data[key.mapKey]
 	if !ok {
 		return fmt.Errorf("no value to remove at key")
 	}
 
 	key.identity = removedIdentity
-	delete(container.data, key.key)
+	delete(c.data, key.mapKey)
 
 	return nil
 }
