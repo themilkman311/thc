@@ -45,5 +45,5 @@ func main() {
 
 Notes and design
 
-- Keys only work on containers associated with them.
+- Attempting to use a key on a container it isn't associated with will result in error.
 - Attempting to store a container within itself will result in error.
