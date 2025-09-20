@@ -11,13 +11,15 @@ import (
 
 const removedIdentity = "REMOVED"
 
+type dataT map[string]struct {
+	value        any
+	timeModified time.Time
+}
+
 type thc_container struct {
 	identity string
-	data     map[string]struct {
-		value        any
-		timeModified time.Time // i'm thinking so one could sort by time modified
-	}
-	mut sync.RWMutex // goroutine safety compliance
+	data     dataT
+	mut      sync.RWMutex // goroutine safety compliance
 }
 
 type thc_key[T any] struct {
