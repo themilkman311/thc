@@ -3,13 +3,21 @@ package thc
 import (
 	"fmt"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
 
+const removedIdentity = "REMOVED"
+
 type thc_container struct {
 	identity string
-	data     map[string]any
+	data     map[string]struct {
+		value any
+		time  time.Time
+	}
+	mut sync.RWMutex
 }
 
 type thc_key[T any] struct {
@@ -17,18 +25,25 @@ type thc_key[T any] struct {
 	key      string
 }
 
-func (c thc_container) String() string {
+func (c *thc_container) String() string {
+	c.mut.RLock()
+	defer c.mut.RUnlock()
 	return "Length: " + strconv.Itoa(len(c.data))
 }
 
-func (c thc_container) Len() int {
+func (c *thc_container) Len() int {
+	c.mut.RLock()
+	defer c.mut.RUnlock()
 	return len(c.data)
 }
 
 func NewTHC() thc_container {
 	return thc_container{
 		identity: uuid.NewString(),
-		data:     make(map[string]any),
+		data: make(map[string]struct {
+			value any
+			time  time.Time
+		}),
 	}
 }
 
@@ -42,7 +57,18 @@ func Store[T any](container *thc_container, input T) (thc_key[T], error) {
 	}
 
 	key := uuid.NewString()
-	container.data[key] = input
+
+	container.mut.Lock()
+	defer container.mut.Unlock()
+
+	container.data[key] = struct {
+		value any
+		time  time.Time
+	}{
+		value: input,
+		time:  time.Now(),
+	}
+
 	return thc_key[T]{
 		identity: container.identity,
 		key:      key,
@@ -52,19 +78,22 @@ func Store[T any](container *thc_container, input T) (thc_key[T], error) {
 func Fetch[T any](container *thc_container, key thc_key[T]) (T, error) {
 	var zero T
 
-	if key.identity == "DELETED" {
+	if key.identity == removedIdentity {
 		return zero, fmt.Errorf("deleted value at key")
 	}
 	if container.identity != key.identity {
 		return zero, fmt.Errorf("container/key identity mismatch")
 	}
 
+	container.mut.RLock()
+	defer container.mut.RUnlock()
+
 	val, ok := container.data[key.key]
 	if !ok {
 		return zero, fmt.Errorf("value not found")
 	}
 
-	casted, ok := val.(T)
+	casted, ok := val.value.(T)
 	if !ok {
 		return zero, fmt.Errorf("type-casting error")
 	}
@@ -78,30 +107,43 @@ func Update[T any](container *thc_container, key thc_key[T], input T) error {
 			return fmt.Errorf("container may not store itself")
 		}
 	}
-	if key.identity == "DELETED" {
+	if key.identity == removedIdentity {
 		return fmt.Errorf("deleted value at key")
 	}
 	if container.identity != key.identity {
 		return fmt.Errorf("container/key identity mismatch")
 	}
 
-	container.data[key.key] = input
+	container.mut.Lock()
+	defer container.mut.Unlock()
+
+	container.data[key.key] = struct {
+		value any
+		time  time.Time
+	}{
+		value: input,
+		time:  time.Now(),
+	}
 	return nil
 }
 
 func Remove[T any](container *thc_container, key *thc_key[T]) error {
-	if key.identity == "DELETED" {
+	if key.identity == removedIdentity {
 		return fmt.Errorf("deleted value at key")
 	}
 	if container.identity != key.identity {
 		return fmt.Errorf("container/key identity mismatch")
 	}
+
+	container.mut.Lock()
+	defer container.mut.Unlock()
+
 	_, ok := container.data[key.key]
 	if !ok {
 		return fmt.Errorf("no value to remove at key")
 	}
 
-	key.identity = "DELETED"
+	key.identity = removedIdentity
 	delete(container.data, key.key)
 
 	return nil
