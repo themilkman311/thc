@@ -18,7 +18,11 @@ type thc_key[T any] struct {
 }
 
 func (c thc_container) String() string {
-	return "length: " + strconv.Itoa(len(c.data))
+	return "Length: " + strconv.Itoa(len(c.data))
+}
+
+func (c thc_container) Len() int {
+	return len(c.data)
 }
 
 func NewTHC() thc_container {
