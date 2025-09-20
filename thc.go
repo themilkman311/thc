@@ -14,10 +14,10 @@ const removedIdentity = "REMOVED"
 type thc_container struct {
 	identity string
 	data     map[string]struct {
-		value any
-		time  time.Time
+		value        any
+		timeModified time.Time // i'm thinking so one could sort by time modified
 	}
-	mut sync.RWMutex
+	mut sync.RWMutex // goroutine safety compliance
 }
 
 type thc_key[T any] struct {
@@ -41,8 +41,8 @@ func NewTHC() thc_container {
 	return thc_container{
 		identity: uuid.NewString(),
 		data: make(map[string]struct {
-			value any
-			time  time.Time
+			value        any
+			timeModified time.Time
 		}),
 	}
 }
@@ -62,11 +62,11 @@ func Store[T any](container *thc_container, input T) (thc_key[T], error) {
 	defer container.mut.Unlock()
 
 	container.data[key] = struct {
-		value any
-		time  time.Time
+		value        any
+		timeModified time.Time
 	}{
-		value: input,
-		time:  time.Now(),
+		value:        input,
+		timeModified: time.Now(),
 	}
 
 	return thc_key[T]{
@@ -118,11 +118,11 @@ func Update[T any](container *thc_container, key thc_key[T], input T) error {
 	defer container.mut.Unlock()
 
 	container.data[key.key] = struct {
-		value any
-		time  time.Time
+		value        any
+		timeModified time.Time
 	}{
-		value: input,
-		time:  time.Now(),
+		value:        input,
+		timeModified: time.Now(),
 	}
 	return nil
 }
