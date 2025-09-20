@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const removedIdentity = "REMOVED"
+var removedID = uuid.NewString() // so little truly matters
 
 type dataMap map[string]struct {
 	value        any
@@ -80,7 +80,7 @@ func Store[T any](c *container, input T) (key[T], error) {
 func Fetch[T any](c *container, key key[T]) (T, error) {
 	var zero T
 
-	if key.identity == removedIdentity {
+	if key.identity == removedID {
 		return zero, fmt.Errorf("deleted value at key")
 	}
 	if c.identity != key.identity {
@@ -109,7 +109,7 @@ func Update[T any](c *container, key key[T], input T) error {
 			return fmt.Errorf("container may not store itself")
 		}
 	}
-	if key.identity == removedIdentity {
+	if key.identity == removedID {
 		return fmt.Errorf("deleted value at key")
 	}
 	if c.identity != key.identity {
@@ -130,7 +130,7 @@ func Update[T any](c *container, key key[T], input T) error {
 }
 
 func Remove[T any](c *container, key *key[T]) error {
-	if key.identity == removedIdentity {
+	if key.identity == removedID {
 		return fmt.Errorf("deleted value at key")
 	}
 	if c.identity != key.identity {
@@ -145,7 +145,7 @@ func Remove[T any](c *container, key *key[T]) error {
 		return fmt.Errorf("no value to remove at key")
 	}
 
-	key.identity = removedIdentity
+	key.identity = removedID
 	delete(c.data, key.mapKey)
 
 	return nil
